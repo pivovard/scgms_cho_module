@@ -124,7 +124,8 @@ HRESULT IfaceCalling CCho_Detection::Do_Configure(scgms::SFilter_Configuration c
 		return E_INVALIDARG;
 	}
 	
-	descending = configuration.Read_Bool(cho_detection::rsDesc);
+	detect_edges = configuration.Read_Bool(cho_detection::rsEdges);
+	detect_desc = configuration.Read_Bool(cho_detection::rsDesc);
 	use_rnn = configuration.Read_Bool(cho_detection::rsRnn);
 	
 	if(use_rnn)
@@ -154,24 +155,27 @@ HRESULT IfaceCalling CCho_Detection::Do_Execute(scgms::UDevice_Event event) {
 		auto seg_id = event.segment_id();
 		auto it = mSegments.find(seg_id);
 		if (it == mSegments.end()) {
-			SegmentData data = { false, -1, -1, swl<double>(window_size), swl<double>(window_size) };
+			CHOSegmentData data = { false, -1, -1, swl<double>(window_size), swl<double>(window_size) };
 			it = mSegments.emplace(seg_id, data).first;
 		}
 
-		//calc activation
-		double act = activation(event, it->second);
+		double act = 0;
+		if (detect_edges) {
+			//calc activation
+			act = activation(event, it->second);
 
-		//send activation
-		scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
-		event_act.device_id() = cho_detection::id_cho;
-		event_act.signal_id() = cho_detection::signal_activation;
-		event_act.segment_id() = event.segment_id();
-		event_act.device_time() = event.device_time();
-		event_act.level() = act;
+			//send activation
+			scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
+			event_act.device_id() = cho_detection::id_cho;
+			event_act.signal_id() = cho_detection::signal_activation;
+			event_act.segment_id() = event.segment_id();
+			event_act.device_time() = event.device_time();
+			event_act.level() = act;
 
-		auto rc = mOutput.Send(event_act);
-		if (!Succeeded(rc)) {
-			return rc;
+			auto rc = mOutput.Send(event_act);
+			if (!Succeeded(rc)) {
+				return rc;
+			}
 		}
 
 		//send level of detected cho
@@ -180,13 +184,13 @@ HRESULT IfaceCalling CCho_Detection::Do_Execute(scgms::UDevice_Event event) {
 		event_cho.segment_id() = event.segment_id();
 		event_cho.device_time() = event.device_time();
 		event_cho.signal_id() = cho_detection::signal_cho;
-		if (!use_rnn && act > th_high) {
+		if (!use_rnn && act > th_high) { //only without RNN 
 			event_cho.level() = 2;
 		}
 		else if (act > th_low) {
 			event_cho.level() = 1;
 		}
-		else {
+		else { //no edge detection or RNN detection only
 			event_cho.level() = 0;
 		}
 
@@ -200,11 +204,16 @@ HRESULT IfaceCalling CCho_Detection::Do_Execute(scgms::UDevice_Event event) {
 
 			float res = rnn.predict((event));
 			if (res > th_rnn) {
-				event_cho.level() += 1;
+				if (detect_edges) { //confirmation for edges
+					event_cho.level() += 1;
+				}
+				else { //use only RNN
+					event_cho.level() = 2;
+				}
 			}
 		}
 
-		rc = mOutput.Send(event_cho);
+		auto rc = mOutput.Send(event_cho);
 		if (!Succeeded(rc)) {
 			return rc;
 		}
@@ -216,7 +225,7 @@ HRESULT IfaceCalling CCho_Detection::Do_Execute(scgms::UDevice_Event event) {
 	return mOutput.Send(event);
 }
 
-double CCho_Detection::activation(scgms::UDevice_Event& event, SegmentData& data)
+double CCho_Detection::activation(scgms::UDevice_Event& event, CHOSegmentData& data)
 {
 	//initializations
 	if (!data.initialized) {
@@ -246,7 +255,7 @@ double CCho_Detection::activation(scgms::UDevice_Event& event, SegmentData& data
 		}
 	}
 	//descending edge
-	else if (descending && act_m <= -1 * weights[0]) {
+	else if (detect_desc && act_m <= -1 * weights[0]) {
 		if (data.activation.size() > gap_size) {
 			act = *std::max_element(data.activation.begin(), data.activation.begin() + gap_size);
 		}

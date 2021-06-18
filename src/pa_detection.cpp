@@ -74,7 +74,7 @@ HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration co
 
 HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 	
-	if (event.is_level_event() && event.signal_id() == scgms::signal_Acceleration) {
+	if (event.is_level_event() && event.signal_id() == scgms::signal_Acceleration && event.level() > 0) {
 		//get segment data
 		auto seg_id = event.segment_id();
 		auto it = mSegments.find(seg_id);

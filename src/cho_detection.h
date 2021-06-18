@@ -63,7 +63,7 @@
 #pragma warning( push )
 #pragma warning( disable : 4250 ) // C4250 - 'class1' : inherits 'class2::member' via dominance
 
-struct SegmentData {
+struct CHOSegmentData {
 	bool initialized = false;
 	double prevL = -1;
 	double prevT = -1;
@@ -84,11 +84,11 @@ public:
 	virtual HRESULT IfaceCalling QueryInterface(const GUID*  riid, void ** ppvObj) override final;
 
 private:
-	std::map<uint64_t, SegmentData> mSegments;
+	std::map<uint64_t, CHOSegmentData> mSegments;
 
 	GUID input_signal = cho_detection::signal_savgol;
 	bool detect_edges = true;
-	bool descending = false;
+	bool detect_desc = false;
 
 	size_t window_size = 12;
 	size_t gap_size = 6;
@@ -103,7 +103,8 @@ private:
 	double th_rnn = 45;
 	std::map<uint64_t, rnn> rnnSegments;
 
-	double activation(scgms::UDevice_Event& event, SegmentData &data);
+	/*Calc activation function*/
+	double activation(scgms::UDevice_Event& event, CHOSegmentData &data);
 };
 
 

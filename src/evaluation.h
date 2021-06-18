@@ -64,7 +64,7 @@
 #pragma warning( push )
 #pragma warning( disable : 4250 ) // C4250 - 'class1' : inherits 'class2::member' via dominance
 
-struct SegmentStatData
+struct StatisticsData
 {
 	size_t count = 0;
 	
@@ -76,10 +76,10 @@ struct SegmentStatData
 
 	double delay = 0;
 	double delay_conf = 0; //confirmation delay
-	::SegmentStatData& operator+=(const SegmentStatData& day);
+	::StatisticsData& operator+=(const StatisticsData& day);
 };
 
-struct SegmentEvalData {
+struct EvalSegmentData {
 	size_t drop_count = 0;
 
 	double date = 0;
@@ -91,8 +91,8 @@ struct SegmentEvalData {
 	bool bConfirmed = false;
 	bool bFP = false;
 
-	SegmentStatData global;
-	SegmentStatData day;
+	StatisticsData global;
+	StatisticsData day;
 };
 
 class CEvaluation : public scgms::CBase_Filter {
@@ -116,10 +116,13 @@ private:
 	size_t th_detection = 1;
 	size_t th_confirmation = 2;
 
-	SegmentEvalData data;
+	EvalSegmentData data;
 
+	/*Process timed operations - late detection, reset timers*/
 	void process_signal(scgms::UDevice_Event& event);
+	/*Process reference signal - FP if not detected, set new reference time*/
 	void process_reference(scgms::UDevice_Event& event);
+	/*Process detected signal - TP/FP*/
 	void process_detection(scgms::UDevice_Event& event);
 };
 

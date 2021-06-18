@@ -47,6 +47,8 @@
  */
 
  /*
+  * Depreceted!
+  * 
   * @author = Bc. David Pivovar
   */
 

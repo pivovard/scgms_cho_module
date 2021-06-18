@@ -119,7 +119,7 @@ HRESULT IfaceCalling CEvaluation::Do_Execute(scgms::UDevice_Event event) {
 			{
 				data.global += data.day;
 			}
-			data.day = SegmentStatData();
+			data.day = StatisticsData();
 		}
 		
 		process_detection(event);
@@ -186,12 +186,12 @@ void CEvaluation::process_signal(scgms::UDevice_Event& event)
 
 void CEvaluation::process_reference(scgms::UDevice_Event& event)
 {
-	//cho not detected
+	//not detected
 	if (data.ref_time > 0 && !data.bDetected) {
 		data.day.FN++;
 	}
 
-	//set new cho
+	//set new reference
 	data.day.count++;
 	data.ref_time = event.device_time();
 	data.bDetected = false;
@@ -208,7 +208,7 @@ void CEvaluation::process_reference(scgms::UDevice_Event& event)
 
 void CEvaluation::process_detection(scgms::UDevice_Event& event)
 {
-	//cho detected
+	//detected
 	if (event.level() >= th_detection) {
 		//detected (increment TP only once)
 		if (data.ref_time > 0 && !data.bDetected) {
@@ -218,7 +218,7 @@ void CEvaluation::process_detection(scgms::UDevice_Event& event)
 			data.detect_time = event.device_time();
 		}
 	}
-	//cho confirmed
+	//confirmed
 	if (event.level() >= th_confirmation) {
 		if (data.ref_time > 0 && !data.bConfirmed) {
 			data.bConfirmed = true;
@@ -233,7 +233,7 @@ void CEvaluation::process_detection(scgms::UDevice_Event& event)
 	}
 }
 
-::SegmentStatData& SegmentStatData::operator+=(const SegmentStatData& day)
+::StatisticsData& StatisticsData::operator+=(const StatisticsData& day)
 {
 	count += day.count;
 	TPd += day.TPd;
