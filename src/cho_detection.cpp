@@ -139,7 +139,7 @@ HRESULT IfaceCalling CCho_Detection::Do_Configure(scgms::SFilter_Configuration c
 		rnn::load_model(path);
 
 		th_rnn = configuration.Read_Double(cho_detection::rsRnnThreshold);
-		if (th_act < 0) {
+		if (th_rnn < 0) {
 			error_description.push(L"RNN threshold must be non-negative");
 			return E_INVALIDARG;
 		}
@@ -159,39 +159,39 @@ HRESULT IfaceCalling CCho_Detection::Do_Execute(scgms::UDevice_Event event) {
 			it = mSegments.emplace(seg_id, data).first;
 		}
 
+		//activation event
+		scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
+		event_act.device_id() = cho_detection::id_cho;
+		event_act.signal_id() = cho_detection::signal_activation;
+		event_act.segment_id() = event.segment_id();
+		event_act.device_time() = event.device_time();
+
+		//event of detected cho
+		scgms::UDevice_Event event_cho(scgms::NDevice_Event_Code::Level);
+		event_cho.device_id() = cho_detection::id_cho;
+		event_cho.segment_id() = event.segment_id();
+		event_cho.device_time() = event.device_time();
+		event_cho.signal_id() = cho_detection::signal_cho;
+		event_cho.level() = 0;
+
 		double act = 0;
 		if (detect_edges) {
 			//calc activation
 			act = activation(event, it->second);
 
 			//send activation
-			scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
-			event_act.device_id() = cho_detection::id_cho;
-			event_act.signal_id() = cho_detection::signal_activation;
-			event_act.segment_id() = event.segment_id();
-			event_act.device_time() = event.device_time();
 			event_act.level() = act;
-
 			auto rc = mOutput.Send(event_act);
 			if (!Succeeded(rc)) {
 				return rc;
 			}
-		}
 
-		//send level of detected cho
-		scgms::UDevice_Event event_cho(scgms::NDevice_Event_Code::Level);
-		event_cho.device_id() = cho_detection::id_cho;
-		event_cho.segment_id() = event.segment_id();
-		event_cho.device_time() = event.device_time();
-		event_cho.signal_id() = cho_detection::signal_cho;
-		if (!use_rnn && act > th_high) { //only without RNN 
-			event_cho.level() = 2;
-		}
-		else if (act > th_low) {
-			event_cho.level() = 1;
-		}
-		else { //no edge detection or RNN detection only
-			event_cho.level() = 0;
+			if (!use_rnn && act > th_high) { //only without RNN 
+				event_cho.level() = 2;
+			}
+			else if (act > th_low) {
+				event_cho.level() = 1;
+			}
 		}
 
 		if(use_rnn)
@@ -209,6 +209,15 @@ HRESULT IfaceCalling CCho_Detection::Do_Execute(scgms::UDevice_Event event) {
 				}
 				else { //use only RNN
 					event_cho.level() = 2;
+				}
+			}
+
+			//send activation
+			if (!detect_edges) {
+				event_act.level() = res;
+				auto rc = mOutput.Send(event_act);
+				if (!Succeeded(rc)) {
+					return rc;
 				}
 			}
 		}

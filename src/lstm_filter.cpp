@@ -70,7 +70,7 @@ HRESULT IfaceCalling CLstm_filter::QueryInterface(const GUID* riid, void** ppvOb
 }
 
 HRESULT IfaceCalling CLstm_filter::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
-	rnn::load_model(L"fdeep_model.json");
+	rnn::load_model(L"model/575_fdeep_model.json");
 	return S_OK;
 }
 

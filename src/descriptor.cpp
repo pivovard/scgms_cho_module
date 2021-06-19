@@ -167,7 +167,7 @@ namespace cho_detection {
 	};
 
 	//RNN filter - deprecated
-	/* const scgms::TFilter_Descriptor lstm_descriptor = {
+	const scgms::TFilter_Descriptor lstm_descriptor = {
 		id_lstm,
 		scgms::NFilter_Flags::None,
 		L"LSTM",
@@ -176,7 +176,7 @@ namespace cho_detection {
 		cho_ui_param_name,
 		cho_config_param_name,
 		nullptr
-	}; */
+	};
 
 	//Savitzky-Golay filter
 	constexpr size_t savgol_param_count = 3;
@@ -273,7 +273,7 @@ namespace cho_detection {
 	//signal descriptors
 	const scgms::TSignal_Descriptor activation_desc{ signal_activation, L"Activation", L"", scgms::NSignal_Unit::Other, 0xFFFF0000, 0xFFFF0000, scgms::NSignal_Visualization::smooth, scgms::NSignal_Mark::none, nullptr };
 	const scgms::TSignal_Descriptor cho_desc{ signal_cho, L"CHO probability", L"", scgms::NSignal_Unit::Other, 0xFFFF0000, 0xFFFF0000, scgms::NSignal_Visualization::step, scgms::NSignal_Mark::cross, nullptr };
-	//const scgms::TSignal_Descriptor lstm_desc{ signal_lstm, L"LSTM", L"", scgms::NSignal_Unit::Other, 0xFFFF0000, 0xFFFF0000, scgms::NSignal_Visualization::smooth, scgms::NSignal_Mark::none, nullptr };
+	const scgms::TSignal_Descriptor lstm_desc{ signal_lstm, L"LSTM", L"", scgms::NSignal_Unit::Other, 0xFFFF0000, 0xFFFF0000, scgms::NSignal_Visualization::smooth, scgms::NSignal_Mark::none, nullptr };
 	const scgms::TSignal_Descriptor savgol_desc{ signal_savgol, L"Savgol signal", dsmmol_per_L, scgms::NSignal_Unit::mmol_per_L, 0xFFFF0000, 0xFFFF0000, scgms::NSignal_Visualization::smooth, scgms::NSignal_Mark::none, nullptr };
 	const scgms::TSignal_Descriptor pa_desc{ signal_pa, L"PA detected", L"", scgms::NSignal_Unit::Other, 0xFFFF0000, 0xFFFF0000, scgms::NSignal_Visualization::step, scgms::NSignal_Mark::cross, nullptr };
 }
@@ -282,13 +282,15 @@ namespace cho_detection {
  * Array of available filter descriptors
  */
 
-const std::array<scgms::TFilter_Descriptor, 4> filter_descriptions = { { cho_detection::cho_descriptor,
+const std::array<scgms::TFilter_Descriptor, 5> filter_descriptions = { { cho_detection::cho_descriptor,
+																		 cho_detection::lstm_descriptor,
 																		 cho_detection::savgol_descriptor,
 																		 cho_detection::eval_descriptor,
 																		 cho_detection::pa_descriptor
 																	 } };
 
-const std::array<scgms::TSignal_Descriptor, 4> signal_descriptors = { { cho_detection::activation_desc,
+const std::array<scgms::TSignal_Descriptor, 5> signal_descriptors = { { cho_detection::activation_desc,
+																		cho_detection::lstm_desc,
 																		cho_detection::savgol_desc,
 																		cho_detection::cho_desc,
 																		cho_detection::pa_desc} };
@@ -317,6 +319,10 @@ extern "C" HRESULT IfaceCalling do_create_filter(const GUID *id, scgms::IFilter 
 
 	if (*id == cho_detection::cho_descriptor.id) {
 		return Manufacture_Object<CCho_Detection>(filter, output);
+	}
+
+	if (*id == cho_detection::lstm_descriptor.id) {
+		return Manufacture_Object<CLstm_filter>(filter, output);
 	}
 
 	if (*id == cho_detection::savgol_descriptor.id) {

@@ -80,7 +80,7 @@ public:
 	virtual HRESULT IfaceCalling QueryInterface(const GUID* riid, void** ppvObj) override final;
 
 private:
-	double threshold = 45;
+	double threshold = 15;
 	std::map<uint64_t, rnn> mSegments;
 };
 

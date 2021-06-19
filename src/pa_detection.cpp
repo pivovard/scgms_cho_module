@@ -66,15 +66,70 @@ HRESULT IfaceCalling CPa_Detection::QueryInterface(const GUID* riid, void** ppvO
 	return E_NOINTERFACE;
 }
 
+SFeatures CPa_Detection::calc_features(std::vector<double> data) {
+	SFeatures features = SFeatures();
+
+	features.mean = mean(data);
+	features.median = median(data);
+	features.std = std(data);
+	features.quantile = quantile_diff(data);
+
+	return features;
+}
+
 HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
 	
+	if (bHeart) signals.push_back(scgms::signal_Heartbeat);
+	if (bSteps) signals.push_back(scgms::signal_Steps);
+	if (bElectro) signals.push_back(scgms::signal_Electrodermal_Activity);
+	if (bTemp) signals.push_back(scgms::signal_Skin_Temperature);
+	if (bAcc) signals.push_back(scgms::signal_Acceleration);
 
 	return S_OK;
 }
 
 HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
+
+	if (event.is_level_event() && std::find(signals.begin(), signals.end(), event.signal_id()) != signals.end() && event.level() > 0) {
+		//get segment data
+		auto seg_id = event.segment_id();
+		auto it = mSegments.find(seg_id);
+		if (it == mSegments.end()) {
+			std::map<GUID, swl<double>> values;
+			std::map<GUID, SFeatures> features;
+			for each (GUID s in signals)
+			{
+				values.emplace(s, swl<double>(window_size));
+				features.emplace(s, SFeatures());
+			}
+
+			PASegmentData data = { -1, values, features };
+			it = mSegments.emplace(seg_id, data).first;
+		}
+
+		auto data = it->second;
+
+		if (data.last_event_time == -1) data.last_event_time = event.device_time(); //first value
+
+		//if there is a space > 5 min between measures add 0
+		double time = (event.device_time() - data.last_event_time) / scgms::One_Minute;
+		if (time > 5) {
+			for (int i = 0; i < (int)(time / 5); ++i) {
+				data.values[event.signal_id()].push_back(0);
+			}
+		}
+
+		auto values = data.values[event.signal_id()];
+		values.push_back(event.level());
+		data.features[event.signal_id()] = calc_features(values.to_vector());
+
+
+	}
+
 	
-	if (event.is_level_event() && event.signal_id() == scgms::signal_Acceleration && event.level() > 0) {
+
+	
+	/*if (event.is_level_event() && event.signal_id() == scgms::signal_Acceleration && event.level() > 0) {
 		//get segment data
 		auto seg_id = event.segment_id();
 		auto it = mSegments.find(seg_id);
@@ -90,7 +145,7 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 			return mOutput.Send(event);
 		}
 		
-		auto quantiles = Quantile<double>(data, { 0.25, 0.75 });
+		auto quantiles = quantile<double>(data, { 0.25, 0.75 });
 		double diff = quantiles[1] - quantiles[0];
 
 		//send detected pa
@@ -126,7 +181,7 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 		// if (!Succeeded(rc)) {
 		// 	return rc;
 		// }
-	}
+	}*/
 	
 	return mOutput.Send(event);
 }

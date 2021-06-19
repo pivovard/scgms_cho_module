@@ -109,13 +109,13 @@ HRESULT IfaceCalling CEvaluation::Do_Execute(scgms::UDevice_Event event) {
 			return mOutput.Send(event);
 		}
 
-		//check date (if new day and count > 3 save stat)
+		//check date (if new day and ref count > 2 save stat)
 		double d;
 		std::modf(event.device_time(), &d);
 		if(d > data.date)
 		{
 			data.date = d;
-			if(data.day.count > 0)
+			if(data.day.count > 2)
 			{
 				data.global += data.day;
 			}
@@ -125,7 +125,7 @@ HRESULT IfaceCalling CEvaluation::Do_Execute(scgms::UDevice_Event event) {
 		process_detection(event);
 	}
 	else if (event.event_code() == scgms::NDevice_Event_Code::Time_Segment_Stop) {
-			if (data.day.count > 0)
+			if (data.day.count > 2)
 			{
 				data.global += data.day;
 			}

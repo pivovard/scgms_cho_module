@@ -38,10 +38,12 @@ float rnn::predict(scgms::UDevice_Event& event)
 
 	float date;
 	float time = std::modf(event.device_time(), &date);
-	float minute = time / scgms::One_Minute / 1440;
+	float minute = time / scgms::One_Minute;
+	minute = minute / 1440; //normalized
 	float hour;
 	std::modf(time / scgms::One_Hour, &hour);
-	data.push_back(hour / 24);
+	hour = hour / 24; //normalized
+	data.push_back(minute);
 
 	if (data.size() == window * headers) {
 		const fdeep::tensor tensor = fdeep::tensor(fdeep::tensor_shape(window, headers), data.to_vector());

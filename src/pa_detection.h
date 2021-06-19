@@ -62,6 +62,7 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <map>
 
 #include "descriptor.h"
 #include "swl.h"
@@ -69,6 +70,19 @@
 #pragma warning( push )
 #pragma warning( disable : 4250 ) // C4250 - 'class1' : inherits 'class2::member' via dominance
 
+struct SFeatures {
+    double mean = 0;
+    double median = 0;
+    double std = 0;
+    double quantile = 0;
+};
+
+struct PASegmentData {
+    double last_event_time = -1;
+
+    std::map<GUID, swl<double>> values;
+    std::map<GUID, SFeatures> features;
+};
 
 class CPa_Detection : public scgms::CBase_Filter {
 
@@ -82,13 +96,52 @@ public:
 	virtual HRESULT IfaceCalling QueryInterface(const GUID* riid, void** ppvObj) override final;
 
 private:
-    std::map<uint64_t, swl<double>> mSegments;
+    /*std::map<uint64_t, swl<double>> mSegments;
 	
 	size_t window_size = 12;
 	double th_acc = 0.5;
 	
-    size_t pa_detected_count = 0;
+    size_t pa_detected_count = 0;*/
 
+    std::map<uint64_t, PASegmentData> mSegments;
+
+    size_t window_size = 12;
+    bool bHeart = true;
+    bool bSteps = true;
+    bool bElectro = true;
+    bool bTemp = true;
+    bool bAcc = true;
+    std::vector<GUID> signals;
+
+    /*Calc features from the given vector*/
+    SFeatures calc_features(std::vector<double>);
+
+
+    /*Calc mean value of vector*/
+    template <typename T>
+    inline T mean(std::vector<T> Data)
+    {
+        T mean = std::accumulate(std::begin(Data), std::end(Data), 0.0) / Data.size();
+        return mean;
+    }
+
+    /*Calc median value of vector*/
+    template <typename T>
+    inline T median(std::vector<T> Data)
+    {
+        T median = quantile<T>(Data, { 0.5 }).front();
+        return median;
+    }
+
+    /*Calc standard deviation of vector*/
+    template <typename M>
+    inline double std(std::vector<M>& Data)
+    {
+        M mean = std::accumulate(std::begin(Data), std::end(Data), 0.0) / Data.size();
+        double sq_sum = std::inner_product(Data.begin(), Data.end(), Data.begin(), 0.0);
+        double stdev = std::sqrt(sq_sum / Data.size() - (double)(mean * mean));
+        return stdev;
+    }
 	
     template<typename T>
     static inline double Lerp(T v0, T v1, T t)
@@ -96,9 +149,9 @@ private:
         return (1 - t) * v0 + t * v1;
     }
 	
-    //quantiles calculation
+    /*Calc quantiles of vector*/
     template<typename T>
-    static inline std::vector<T> Quantile(swl<T>& inData, const std::vector<T>& probs)
+    static inline std::vector<T> quantile(swl<T>& inData, const std::vector<T>& probs)
     {
         if (inData.empty())
         {
@@ -130,6 +183,15 @@ private:
         }
 
         return quantiles;
+    }
+
+    /*Calc difference of 1. and 3. quantile*/
+    template <typename T>
+    inline T quantile_diff(std::vector<T> Data)
+    {
+        std::vector<T> quantiles = quantile<T>(data, { 0.25, 0.75 });
+        T diff = quantiles[1] - quantiles[0];
+        return diff;
     }
 };
 
