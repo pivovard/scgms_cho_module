@@ -231,7 +231,7 @@ namespace cho_detection {
 		L"Detected signal",
 		L"Max detection delay (min)",
 		L"False positive cooldown",
-		L"Late detection delay"
+		L"Late detection delay",
 		L"Min reference count"
 	};
 
@@ -295,11 +295,11 @@ namespace cho_detection {
 		L"Threshold",
 
 		L"Mean",
-		L"Size",
+		L"Window size - mean",
 
 		L"Detect IST edges",
 		L"Signal",
-		L"Window size",
+		L"Window size - edges",
 		L"Thresholds"
 	};
 
@@ -319,10 +319,10 @@ namespace cho_detection {
 		rsThHeartbeat,
 		rsSSteps,
 		rsThSteps,
-		rsThAcc,
 		rsSAcc,
-		rsThEl,
+		rsThAcc,
 		rsSEl,
+		rsThEl,
 
 		rsMean,
 		rsMeanSize,

@@ -69,31 +69,34 @@ HRESULT IfaceCalling CPa_Detection::QueryInterface(const GUID* riid, void** ppvO
 HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
 	if (configuration.Read_Bool(cho_detection::rsSHeartbeat)) {
 		signals.push_back(scgms::signal_Heartbeat);
-		auto th =  configuration.Read_Double(cho_detection::rsThHeartbeat);
+		auto th =  configuration.Read_Double(cho_detection::rsThHeartbeat, 80);
 		th_signal.emplace(scgms::signal_Heartbeat, th);
 	}
 	if (configuration.Read_Bool(cho_detection::rsSSteps)) {
 		signals.push_back(scgms::signal_Steps);
-		auto th = configuration.Read_Double(cho_detection::rsThSteps);
+		auto th = configuration.Read_Double(cho_detection::rsThSteps, 20);
 		th_signal.emplace(scgms::signal_Steps, th);
 	}
 	if (configuration.Read_Bool(cho_detection::rsSAcc)) {
 		signals.push_back(scgms::signal_Acceleration);
-		auto th = configuration.Read_Double(cho_detection::rsThAcc);
+		auto th = configuration.Read_Double(cho_detection::rsThAcc, 1.1);
 		th_signal.emplace(scgms::signal_Acceleration, th);
 	}
 	if (configuration.Read_Bool(cho_detection::rsSEl)) {
 		signals.push_back(scgms::signal_Electrodermal_Activity);
-		auto th = configuration.Read_Double(cho_detection::rsThEl);
+		auto th = configuration.Read_Double(cho_detection::rsThEl, 10);
 		th_signal.emplace(scgms::signal_Electrodermal_Activity, th);
 	}
 
-	if (b_mean = configuration.Read_Bool(cho_detection::rsMean)) {
+	if (b_mean = configuration.Read_Bool(cho_detection::rsMean) || b_class) {
 		mean_window = configuration.Read_Int(cho_detection::rsMeanSize);
 		if (mean_window < 1) {
 			error_description.push(L"Window size must be at least 1!");
 			return E_INVALIDARG;
 		}
+	}
+	else {
+		mean_window = 1;
 	}
 
 	if (configuration.Read_Bool(cho_detection::rsDesc)) {
@@ -116,8 +119,11 @@ HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration co
 		}
 	}
 
-	//classifier = std::make_unique<ml>('l', signals.size(), "0-pa-export.csv");
-
+	//classification - test purposes only
+	if (b_class) {
+		classifier = std::make_unique<ml>('l', signals.size(), "0-pa-export.csv");
+	}
+	
 	return S_OK;
 }
 
@@ -132,11 +138,13 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 			std::map<GUID, SFeatures> features;
 			for each (GUID s in signals)
 			{
-				values.emplace(s, swl<double>(signal_window));
+				values.emplace(s, swl<double>(mean_window));
 				features.emplace(s, SFeatures());
 			}
+			swl<double> act(ist_window);
+			act.push_front(0);
 
-			PASegmentData data = { -1, false, -1, -1, swl<double>(12), swl<double>(12), values, features };
+			PASegmentData data = { -1, false, -1, -1, act, values, features };
 			it = mSegments.emplace(seg_id, data).first;
 		}
 		data = &it->second;
@@ -148,11 +156,10 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 	event_pa.segment_id() = event.segment_id();
 	event_pa.device_time() = event.device_time();
 	event_pa.signal_id() = cho_detection::signal_pa;
+	event_pa.level() = 0;
 
 	//ist signal
-	if (event.is_level_event() && event.signal_id() == cho_detection::signal_savgol && event.level() > 0) {
-		data->ist.push_back(event.level());
-
+	if (b_edge && event.is_level_event() && event.signal_id() == cho_detection::signal_savgol && event.level() > 0) {
 		double act = activation(event, *data);
 
 		//activation event
@@ -166,80 +173,58 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 		if (!Succeeded(rc)) {
 			return rc;
 		}
-		
-		//send detected pa
-		if (act < th_edge) {
-			event_pa.level() = 2;
+	}
+	
+	if (event.is_level_event() && std::find(signals.begin(), signals.end(), event.signal_id()) != signals.end() && event.level() > 0) {
+		if (data->last_event_time == -1) data->last_event_time = event.device_time(); //first value set time
+
+		//if there is a space > 5 min between measures add 0
+		/*double delta = (event.device_time() - data->last_event_time) / scgms::One_Minute;
+		if (delta > 5) {
+			for (int i = 0; i < (int)(delta / 5); ++i) {
+				data->values[event.signal_id()].push_back(0);
+			}
+		}*/
+
+		//save values
+		auto& values = data->values[event.signal_id()];
+		values.push_back(event.level());
+		data->features[event.signal_id()] = calc_features(values.to_vector());
+
+		data->last_event_time = event.device_time();
+
+		//threshold
+		bool res = true;
+		for each (auto signal in data->features)
+		{
+			//if window_size = 1 then mean = value
+			res = res && (signal.second.mean > th_signal[signal.first]);
 		}
-		else {
-			event_pa.level() = 0;
+		if (res) {
+			event_pa.level() = 1;
 		}
 
-		rc = mOutput.Send(event_pa);
+		//confirmation
+		if (b_edge) {
+			if (data->activation_m.front() < th_edge) {
+				event_pa.level() += 1;
+			}
+		}
+		else {
+			event_pa.level() *= 2;
+		}
+
+		//classification - test purposes only
+		if (b_class) {
+			auto res = classifier->classify(get_feature_vector(data->features));
+			event_pa.level() = res * 2;
+		}
+
+		//send detected pa
+		auto rc = mOutput.Send(event_pa);
 		if (!Succeeded(rc)) {
 			return rc;
 		}
-	}
-
-	if (event.is_level_event() && event.signal_id() == input_signal && event.level() > 0) {
-		auto v = event.level();
-		if (event.level() > th_signal) {
-			//send detected pa
-			event_pa.level() = 2;
-			auto rc = mOutput.Send(event_pa);
-			if (!Succeeded(rc)) {
-				return rc;
-			}
-		}
-	}
-
-
-	//classification
-	if (event.is_level_event() && std::find(signals.begin(), signals.end(), event.signal_id()) != signals.end() && event.level() > 0) {
-		//get segment data
-		auto seg_id = event.segment_id();
-		auto it = mSegments.find(seg_id);
-		if (it == mSegments.end()) {
-			std::map<GUID, swl<double>> values;
-			std::map<GUID, SFeatures> features;
-			for each (GUID s in signals)
-			{
-				values.emplace(s, swl<double>(mean_window));
-				features.emplace(s, SFeatures());
-			}
-
-			PASegmentData data = { -1, false, -1, -1, swl<double>(12), swl<double>(12), values, features };
-			it = mSegments.emplace(seg_id, data).first;
-		}
-		auto& data = it->second;
-
-		if (data.last_event_time == -1) data.last_event_time = event.device_time(); //first value
-
-		//classification
-		if (data.last_event_time != event.device_time()) {
-			//auto res = classifier->classify(get_feature_vector(data.features));
-
-			//send detected pa
-			/*event_pa.level() = res * 2;
-			auto rc = mOutput.Send(event_pa);
-			if (!Succeeded(rc)) {
-				return rc;
-			}*/
-		}
-
-		//if there is a space > 5 min between measures add 0
-		double delta = (event.device_time() - data.last_event_time) / scgms::One_Minute;
-		if (delta > 5) {
-			for (int i = 0; i < (int)(delta / 5); ++i) {
-				data.values[event.signal_id()].push_back(0);
-			}
-		}
-
-		auto values = data.values[event.signal_id()];
-		values.push_back(event.level());
-		data.features[event.signal_id()] = calc_features(values.to_vector());
-
-		data.last_event_time = event.device_time();
 	}
 	
 	return mOutput.Send(event);

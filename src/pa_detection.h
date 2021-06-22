@@ -86,7 +86,6 @@ struct PASegmentData {
     bool initialized = false;
     double prevL = -1;
     double prevT = -1;
-    swl<double> ist;
     swl<double> activation_m;
 
     std::map<GUID, swl<double>> values;
@@ -111,16 +110,15 @@ private:
     std::vector<GUID> signals;
     std::map<GUID, double> th_signal;
 
-    //GUID input_signal;
-    //double th_signal = 0;
-
-    //classifier use - test purposes only
-    std::unique_ptr<ml> classifier;
-
     bool b_mean = false;
     size_t mean_window = 6;
 
+    //classifier use - test purposes only
+    bool b_class = false;
+    std::unique_ptr<ml> classifier;
+
     //edge detection
+    bool b_edge = false;
     GUID ist_signal;
     size_t ist_window = 12;
     double th_act = 2;

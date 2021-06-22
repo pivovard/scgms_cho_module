@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
 PROJECT("SmartCGMS-cho_detection")
 
-SET(PROJ "cho_detection")
+SET(PROJ "act_detection")
 SET(CMAKE_CXX_STANDARD 17)
 SET(SMARTCGMS_COMMON_DIR "c:/Users/pivov/_dev/_dp/smartcgms/src/common/")
 
