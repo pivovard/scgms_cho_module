@@ -113,6 +113,7 @@ private:
 	int64_t max_delay = 180;
 	int64_t fp_delay = 120;
 	int64_t late_delay = 10;
+	int64_t min_ref = 0;
 	size_t th_detection = 1;
 	size_t th_confirmation = 2;
 

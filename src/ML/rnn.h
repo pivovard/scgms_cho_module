@@ -10,7 +10,7 @@
 #include "fdeep/fdeep.hpp"
 #include <rtl/DeviceLib.h>
 #include <rtl/FilterLib.h>
-#include "swl.h"
+#include "../swl.h"
 
 #include <string>
 

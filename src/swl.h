@@ -10,7 +10,8 @@ template <class T >
 class swl : public std::deque<T>
 {
 public:
-	swl<T>() = delete;
+	//swl<T>() = delete;
+	swl<T>() : swl<T>(12) {};
 	explicit swl<T>(size_t width) : _width(width) {};
 
 	inline void push_back(T val) {

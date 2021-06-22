@@ -88,6 +88,8 @@ HRESULT IfaceCalling CEvaluation::Do_Configure(scgms::SFilter_Configuration conf
 		error_description.push(L"Delay must be non-negative");
 		return E_INVALIDARG;
 	}
+
+	min_ref = configuration.Read_Int(cho_detection::rsMinRef, 0);
 	
 	return S_OK;
 }
@@ -115,17 +117,20 @@ HRESULT IfaceCalling CEvaluation::Do_Execute(scgms::UDevice_Event event) {
 		if(d > data.date)
 		{
 			data.date = d;
-			if(data.day.count > 2)
+			if(data.day.count >= min_ref)
 			{
 				data.global += data.day;
 			}
 			data.day = StatisticsData();
 		}
 		
+		auto l = event.level();
+
+		if(true)
 		process_detection(event);
 	}
 	else if (event.event_code() == scgms::NDevice_Event_Code::Time_Segment_Stop) {
-			if (data.day.count > 2)
+			if (data.day.count >= min_ref)
 			{
 				data.global += data.day;
 			}

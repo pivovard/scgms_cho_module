@@ -92,10 +92,23 @@ namespace cho_detection {
 	extern const wchar_t* rsMaxDelay;
 	extern const wchar_t* rsFPDelay;
 	extern const wchar_t* rsLateDelay;
+	extern const wchar_t* rsMinRef;
 	
 
 	constexpr GUID id_pa = { 0xe9e99c04, 0xcb72, 0x4272, { 0xb6, 0xa, 0x3, 0x66, 0x47, 0x78, 0x3b, 0x6b } }; // {E9E99C04-CB72-4272-B60A-036647783B6B}
 	constexpr GUID signal_pa = { 0xfeb4552a, 0x1c3, 0x4885, { 0x9b, 0xbc, 0x25, 0x29, 0x9b, 0xcd, 0xf0, 0x72 } }; // {FEB4552A-01C3-4885-9BBC-25299BCDF072}
+
+	extern const wchar_t* rsSHeartbeat;
+	extern const wchar_t* rsSSteps;
+	extern const wchar_t* rsSAcc;
+	extern const wchar_t* rsSEl;
+	extern const wchar_t* rsThHeartbeat;
+	extern const wchar_t* rsThSteps;
+	extern const wchar_t* rsThAcc;
+	extern const wchar_t* rsThEl;
+
+	extern const wchar_t* rsMean;
+	extern const wchar_t* rsMeanSize;
 
 	
 

@@ -215,11 +215,12 @@ namespace cho_detection {
 	};
 
 	//evaluation filter
-	constexpr size_t eval_param_count = 5;
+	constexpr size_t eval_param_count = 6;
 
 	const scgms::NParameter_Type eval_param_type[eval_param_count] = {
 		scgms::NParameter_Type::ptSignal_Id,
 		scgms::NParameter_Type::ptSignal_Id,
+		scgms::NParameter_Type::ptInt64,
 		scgms::NParameter_Type::ptInt64,
 		scgms::NParameter_Type::ptInt64,
 		scgms::NParameter_Type::ptInt64
@@ -231,6 +232,7 @@ namespace cho_detection {
 		L"Max detection delay (min)",
 		L"False positive cooldown",
 		L"Late detection delay"
+		L"Min reference count"
 	};
 
 	extern const wchar_t* rsSignalRef = L"ref_signal";
@@ -238,13 +240,15 @@ namespace cho_detection {
 	extern const wchar_t* rsMaxDelay = L"max_delay";
 	extern const wchar_t* rsFPDelay = L"fp_delay";
 	extern const wchar_t* rsLateDelay = L"late_delay";
+	extern const wchar_t* rsMinRef = L"min_ref";
 
 	const wchar_t* eval_config_param_name[eval_param_count] = {
 		rsSignalRef,
 		rsSignalDet,
 		rsMaxDelay,
 		rsFPDelay,
-		rsLateDelay
+		rsLateDelay,
+		rsMinRef
 	};
 	
 	const scgms::TFilter_Descriptor eval_descriptor = {
@@ -259,15 +263,105 @@ namespace cho_detection {
 	};
 
 	//PA detection filter
+	constexpr size_t pa_param_count = 14;
+
+	const scgms::NParameter_Type pa_param_type[pa_param_count] = {
+		scgms::NParameter_Type::ptBool,
+		scgms::NParameter_Type::ptDouble,
+		scgms::NParameter_Type::ptBool,
+		scgms::NParameter_Type::ptDouble,
+		scgms::NParameter_Type::ptBool,
+		scgms::NParameter_Type::ptDouble,
+		scgms::NParameter_Type::ptBool,
+		scgms::NParameter_Type::ptDouble,
+
+		scgms::NParameter_Type::ptBool,
+		scgms::NParameter_Type::ptInt64,
+
+		scgms::NParameter_Type::ptBool,
+		scgms::NParameter_Type::ptSignal_Id,
+		scgms::NParameter_Type::ptInt64,
+		scgms::NParameter_Type::ptDouble_Array,
+	};
+
+	const wchar_t* pa_ui_param_name[pa_param_count] = {
+		L"Heartbeat",
+		L"Threshold",
+		L"Steps",
+		L"Threshold",
+		L"Acceleration",
+		L"Threshold",
+		L"Electrodermal activity",
+		L"Threshold",
+
+		L"Mean",
+		L"Size",
+
+		L"Detect IST edges",
+		L"Signal",
+		L"Window size",
+		L"Thresholds"
+	};
+
+	extern const wchar_t* rsSHeartbeat = L"b_heart";
+	extern const wchar_t* rsSSteps = L"b_steps";
+	extern const wchar_t* rsSAcc = L"b_acc";
+	extern const wchar_t* rsSEl = L"b_el";
+	extern const wchar_t* rsThHeartbeat = L"th_heart";
+	extern const wchar_t* rsThSteps = L"th_steps";
+	extern const wchar_t* rsThAcc = L"th_acc";
+	extern const wchar_t* rsThEl = L"th_el";
+	extern const wchar_t* rsMean = L"mean";
+	extern const wchar_t* rsMeanSize = L"mean_size";
+
+	const wchar_t* pa_config_param_name[pa_param_count] = {
+		rsSHeartbeat,
+		rsThHeartbeat,
+		rsSSteps,
+		rsThSteps,
+		rsThAcc,
+		rsSAcc,
+		rsThEl,
+		rsSEl,
+
+		rsMean,
+		rsMeanSize,
+
+		rsDesc,
+		rsSignal,
+		rsWindowSize,
+		rsThresholds
+	};
+
 	const scgms::TFilter_Descriptor pa_descriptor = {
 		id_pa,
 		scgms::NFilter_Flags::None,
 		L"PA detection",
-		0,
-		nullptr,
-		nullptr,
-		nullptr,
+		pa_param_count,
+		pa_param_type,
+		pa_ui_param_name,
+		pa_config_param_name,
 		nullptr
+	};
+
+	const scgms::TModel_Descriptor pa_detect_thresh_and_weights_desc = {
+			id_pa,
+			scgms::NModel_Flags::None,
+			dsParameters,
+			rsParameters,
+
+			cho_detect_thresh_and_weights_count,
+			cho_detect_thresh_and_weights_types,
+			cho_detect_thresh_and_weights_ui_names,
+			cho_detect_thresh_and_weights_config_names,
+
+			cho_detect_thresh_and_weights_lb,
+			cho_detect_thresh_and_weights_def,
+			cho_detect_thresh_and_weights_ub,
+
+			0,
+			&scgms::signal_Null,
+			&scgms::signal_Null
 	};
 
 	//signal descriptors
@@ -293,7 +387,12 @@ const std::array<scgms::TSignal_Descriptor, 5> signal_descriptors = { { cho_dete
 																		cho_detection::lstm_desc,
 																		cho_detection::savgol_desc,
 																		cho_detection::cho_desc,
-																		cho_detection::pa_desc} };
+																		cho_detection::pa_desc
+																	} };
+
+const std::array<scgms::TModel_Descriptor, 2> model_descriptors = { { cho_detection::cho_detect_thresh_and_weights_desc,
+																	  cho_detection::pa_detect_thresh_and_weights_desc
+																  } };
 
 /*
  * Filter library interface implementations
@@ -310,9 +409,10 @@ extern "C" HRESULT IfaceCalling do_get_signal_descriptors(scgms::TSignal_Descrip
 }
 
 extern "C" HRESULT IfaceCalling do_get_model_descriptors(scgms::TModel_Descriptor * *begin, scgms::TModel_Descriptor * *end) {
-	*begin = const_cast<scgms::TModel_Descriptor*>(&cho_detection::cho_detect_thresh_and_weights_desc);
-	*end = *begin + 1;
-	return S_OK;
+	//*begin = const_cast<scgms::TModel_Descriptor*>(&cho_detection::cho_detect_thresh_and_weights_desc);
+	//*end = *begin + 1;
+	//return S_OK;
+	return do_get_descriptors(model_descriptors, begin, end);
 }
 
 extern "C" HRESULT IfaceCalling do_create_filter(const GUID *id, scgms::IFilter *output, scgms::IFilter **filter) {

@@ -63,9 +63,12 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <numeric>
+//#include <>
 
 #include "descriptor.h"
 #include "swl.h"
+#include "ML/ml.h"
 
 #pragma warning( push )
 #pragma warning( disable : 4250 ) // C4250 - 'class1' : inherits 'class2::member' via dominance
@@ -79,11 +82,18 @@ struct SFeatures {
 
 struct PASegmentData {
     double last_event_time = -1;
+    
+    bool initialized = false;
+    double prevL = -1;
+    double prevT = -1;
+    swl<double> ist;
+    swl<double> activation_m;
 
     std::map<GUID, swl<double>> values;
     std::map<GUID, SFeatures> features;
 };
 
+/*Filter to detect physical activity*/
 class CPa_Detection : public scgms::CBase_Filter {
 
 protected:
@@ -96,50 +106,61 @@ public:
 	virtual HRESULT IfaceCalling QueryInterface(const GUID* riid, void** ppvObj) override final;
 
 private:
-    /*std::map<uint64_t, swl<double>> mSegments;
-	
-	size_t window_size = 12;
-	double th_acc = 0.5;
-	
-    size_t pa_detected_count = 0;*/
-
     std::map<uint64_t, PASegmentData> mSegments;
 
-    size_t window_size = 12;
-    bool bHeart = true;
-    bool bSteps = true;
-    bool bElectro = true;
-    bool bTemp = true;
-    bool bAcc = true;
     std::vector<GUID> signals;
+    std::map<GUID, double> th_signal;
+
+    //GUID input_signal;
+    //double th_signal = 0;
+
+    //classifier use - test purposes only
+    std::unique_ptr<ml> classifier;
+
+    bool b_mean = false;
+    size_t mean_window = 6;
+
+    //edge detection
+    GUID ist_signal;
+    size_t ist_window = 12;
+    double th_act = 2;
+    double th_edge = -5.5;
+    std::vector<double> thresholds = { 0.0125, 0.018 };
+    std::vector<double> weights = { 2.25, 3 };
+
+    /*Calc activation function*/
+    double activation(scgms::UDevice_Event& event, PASegmentData& data);
 
     /*Calc features from the given vector*/
     SFeatures calc_features(std::vector<double>);
+    /*Transform features to the vector*/
+    std::vector<double> get_feature_vector(std::map<GUID, SFeatures> features);
+
 
 
     /*Calc mean value of vector*/
     template <typename T>
-    inline T mean(std::vector<T> Data)
+    inline T mean(std::vector<T> data)
     {
-        T mean = std::accumulate(std::begin(Data), std::end(Data), 0.0) / Data.size();
+        T mean = std::accumulate(std::begin(data), std::end(data), 0.0) / data.size();
         return mean;
     }
 
     /*Calc median value of vector*/
     template <typename T>
-    inline T median(std::vector<T> Data)
+    inline T median(std::vector<T> data)
     {
-        T median = quantile<T>(Data, { 0.5 }).front();
+        T median = quantile<T>(data, { 0.5 }).front();
         return median;
     }
 
     /*Calc standard deviation of vector*/
     template <typename M>
-    inline double std(std::vector<M>& Data)
+    inline double std(std::vector<M>& data)
     {
-        M mean = std::accumulate(std::begin(Data), std::end(Data), 0.0) / Data.size();
-        double sq_sum = std::inner_product(Data.begin(), Data.end(), Data.begin(), 0.0);
-        double stdev = std::sqrt(sq_sum / Data.size() - (double)(mean * mean));
+        M mean = std::accumulate(std::begin(data), std::end(data), 0.0) / data.size();
+        double sq_sum = std::inner_product(data.begin(), data.end(), data.begin(), 0.0);
+        double stdev = std::sqrt(sq_sum / data.size() - (double)(mean * mean));
         return stdev;
     }
 	
@@ -151,19 +172,18 @@ private:
 	
     /*Calc quantiles of vector*/
     template<typename T>
-    static inline std::vector<T> quantile(swl<T>& inData, const std::vector<T>& probs)
+    static inline std::vector<T> quantile(std::vector<T> data, const std::vector<T>& probs)
     {
-        if (inData.empty())
+        if (data.empty())
         {
             return std::vector<T>();
         }
 
-        if (1 == inData.size())
+        if (1 == data.size())
         {
-            return std::vector<T>(1, inData[0]);
+            return std::vector<T>(1, data[0]);
         }
 
-        std::vector<T> data = inData.to_vector();
         std::sort(data.begin(), data.end());
         std::vector<T> quantiles;
 
@@ -187,9 +207,12 @@ private:
 
     /*Calc difference of 1. and 3. quantile*/
     template <typename T>
-    inline T quantile_diff(std::vector<T> Data)
+    inline T quantile_diff(std::vector<T> data)
     {
         std::vector<T> quantiles = quantile<T>(data, { 0.25, 0.75 });
+
+        if (quantiles.size() < 2) return 0;
+
         T diff = quantiles[1] - quantiles[0];
         return diff;
     }
