@@ -1,12 +1,16 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
-PROJECT("SmartCGMS-cho_detection")
+PROJECT("SmartCGMS")
 
 SET(PROJ "act_detection")
 SET(CMAKE_CXX_STANDARD 17)
+#set common dir
 SET(SMARTCGMS_COMMON_DIR "c:/Users/pivov/_dev/_dp/smartcgms/src/common/")
 
 FILE(GLOB SRC_FILES "src/*.cpp" "src/*.hpp" "src/*.c" "src/*.h")
+FILE(GLOB SRC_ML_FILES "src/ML/*.cpp" "src/ML/*.hpp" "src/ML/*.h" "src/ML/*.def")
+FILE(GLOB SRC_SKLEARN_FILES "src/ML/sklearn/*.cpp" "src/ML/sklearn/*.hpp" "src/ML/sklearn/*.h" "src/ML/sklearn/*.def")
+
 IF(WIN32)
 	FILE(GLOB SRC_WIN_FILES "src/win/*.cpp" "src/win/*.hpp" "src/win/*.h" "src/win/*.def")
 	SET(SRC_FILES "${SRC_FILES};${SRC_WIN_FILES}")
@@ -32,5 +36,14 @@ LIST(APPEND COMMON_FILES "${SMARTCGMS_COMMON_DIR}/utils/winapi_mapping.c")
 
 SOURCE_GROUP("common" FILES ${COMMON_FILES})
 SOURCE_GROUP("src" FILES ${SRC_FILES})
+SOURCE_GROUP("ML" FILES ${SRC_ML_FILES})
+SOURCE_GROUP("ML/sklearn" FILES ${SRC_SKLEARN_FILES})
 
-ADD_LIBRARY(${PROJ} SHARED ${SRC_FILES};${COMMON_FILES})
+ADD_LIBRARY(${PROJ} SHARED ${SRC_FILES};${COMMON_FILES};${SRC_ML_FILES};${SRC_SKLEARN_FILES})
+
+#set include directories
+include_directories("c:/Program Files (x86)/Visual Leak Detector/include/")
+include_directories("c:/Users/pivov/_dev/_dp/lib/frugally-deep/include/")
+include_directories("c:/Users/pivov/_dev/_dp/lib/eigen/")
+include_directories("c:/Users/pivov/_dev/_dp/lib/FunctionalPlus/include/")
+include_directories("c:/Users/pivov/_dev/_dp/lib/json/include/")
