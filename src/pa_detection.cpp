@@ -121,7 +121,7 @@ HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration co
 
 	//classification - test purposes only
 	if (b_class) {
-		classifier = std::make_unique<ml>('l', signals.size(), "0-pa-export.csv");
+		classifier = std::make_unique<ml>(class_type, signals.size(), class_path);
 	}
 	
 	return S_OK;

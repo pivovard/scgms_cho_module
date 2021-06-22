@@ -47,8 +47,6 @@
  */
 
  /*
-  * Depreceted!
-  *
   * @author = Bc. David Pivovar
   */
 
@@ -68,14 +66,18 @@
 #pragma warning( push )
 #pragma warning( disable : 4250 ) // C4250 - 'class1' : inherits 'class2::member' via dominance
 
-class CLstm_filter : public scgms::CBase_Filter {
+/**
+* Filter for detection of carbohydrates by RNN.
+* Deprecated!
+*/
+class CRnn_filter : public scgms::CBase_Filter {
 
 protected:
 	virtual HRESULT Do_Execute(scgms::UDevice_Event event) override final;
 	virtual HRESULT Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) override final;
 public:
-	CLstm_filter(scgms::IFilter* output);
-	virtual ~CLstm_filter();
+	CRnn_filter(scgms::IFilter* output);
+	virtual ~CRnn_filter();
 
 	virtual HRESULT IfaceCalling QueryInterface(const GUID* riid, void** ppvObj) override final;
 

@@ -72,6 +72,7 @@ struct CHOSegmentData {
 	swl<double> activation_m;
 };
 
+/*Filter for carbohydrates detection*/
 class CCho_Detection : public scgms::CBase_Filter {
 
 protected:

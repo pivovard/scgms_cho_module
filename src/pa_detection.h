@@ -64,7 +64,6 @@
 #include <vector>
 #include <map>
 #include <numeric>
-//#include <>
 
 #include "descriptor.h"
 #include "swl.h"
@@ -92,7 +91,7 @@ struct PASegmentData {
     std::map<GUID, SFeatures> features;
 };
 
-/*Filter to detect physical activity*/
+/*Filter for physical activity detection*/
 class CPa_Detection : public scgms::CBase_Filter {
 
 protected:
@@ -115,6 +114,8 @@ private:
 
     //classifier use - test purposes only
     bool b_class = false;
+    char class_type = 'l';
+    std::string class_path = "0-pa-export.csv";
     std::unique_ptr<ml> classifier;
 
     //edge detection

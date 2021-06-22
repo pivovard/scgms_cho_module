@@ -10,11 +10,13 @@
 #include "sklearn/naive_bayes.h"
 #include "sklearn/logistic_regression.h"
 
-#include <ldaplusplus/LDA.hpp>
-#include <ldaplusplus/LDABuilder.hpp>
-#include <ldaplusplus/NumpyFormat.hpp>
-#include <ldaplusplus/events/ProgressEvents.hpp>
+//#include <Eigen/Core>
+//#include <ldaplusplus/LDA.hpp>
+//#include <ldaplusplus/LDABuilder.hpp>
 
+/**
+* Wrapper for machine learning - test purposes
+*/
 class ml
 {
 public:
@@ -35,9 +37,9 @@ public:
 private:
 	char type;
 
-	//ldaplusplus::LDA<double> lda
 	std::unique_ptr <logistic_regression> lg;
 	std::unique_ptr <gaussian_naive_bayes> nb;
+	//ldaplusplus::LDA<double>* lda;
 	//std::unique_ptr<mlpack::naive_bayes::NaiveBayesClassifier<>> m_nb;
 };
 

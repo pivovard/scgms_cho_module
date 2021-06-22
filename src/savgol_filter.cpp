@@ -110,7 +110,6 @@ HRESULT IfaceCalling CSavgol_Filter::Do_Execute(scgms::UDevice_Event event) {
 
 HRESULT CSavgol_Filter::process(scgms::UDevice_Event &event, swl<double>& ist)
 {
-	//Savitzky-Golay filter
 	double _ist = 0;
 	ist.push_back(event.level());
 

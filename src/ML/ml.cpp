@@ -26,14 +26,58 @@ ml::ml(char type, int n_signals, std::string path)
         nb->save_model("model.json");
         break;
     }
+    case 'd':
+    {
+        /*std::pair<std::vector<std::vector<double>>, std::vector<unsigned long>> data = ml::read_csv(path);
+        const auto len = data.first.size();
+        Eigen::MatrixXi X(data.first);
+        Eigen::VectorXi y(data.second.data());
+
+        ldaplusplus::LDA<double> tmp = ldaplusplus::LDABuilder<double>()
+            .set_supervised_e_step()
+            .set_supervised_m_step()
+            .initialize_topics_seeded(X, 10)
+            .initialize_eta_zeros(2);
+        lda = &tmp;
+        lda->fit(X, y);*/
+        break;
+    }
     case 'm':
     {
-       /* std::pair<arma::mat, arma::u64_rowvec> data = ml::read_csv_to_arma(path, n_signals * 4);
-        m_nb = std::make_unique<mlpack::naive_bayes::NaiveBayesClassifier<>>(data.first, data.second, 2);
-        break;*/
+       /*std::pair<arma::mat, arma::u64_rowvec> data = ml::read_csv_to_arma(path, n_signals * 4);
+       m_nb = std::make_unique<mlpack::naive_bayes::NaiveBayesClassifier<>>(data.first, data.second, 2);*/
+       break;
+    } }
+}
+
+int ml::classify(std::vector<double> vec)
+{
+    int res = 0;
+
+    switch (type) {
+    case 'l':
+    {
+        std::map<unsigned long, double> r = lg->predict(vec);
+        if (r[1] > r[0]) res = 1;
+        break;
     }
+    case 'b':
+    {
+        std::map<unsigned long, double> r = nb->predict(vec);
+        if (r[1] > r[0]) res = 1;
+        break;
     }
-    
+    case 'd':
+        break;
+    case 'm':
+    {
+        //arma::u64_rowvec r;
+        ////m_nb->Classify(vec, r); //causes bug
+        //res = r[0];*/
+        break;
+    } }
+
+    return 0;
 }
 
 std::pair<std::vector<std::vector<double>>, std::vector<unsigned long>> ml::read_csv(std::string path) {
@@ -100,32 +144,3 @@ std::pair<arma::mat, arma::u64_rowvec> ml::read_csv_to_arma(std::string path, in
 
     return std::pair<arma::mat, arma::u64_rowvec>(data.t(), labels); //data must be transposed
 }*/
-
-int ml::classify(std::vector<double> vec)
-{
-    int res = 0;
-
-    switch (type) {
-    case 'l':
-    {
-        std::map<unsigned long, double> r = lg->predict(vec);
-        if (r[1] > r[0]) res = 1;
-        break;
-    }
-    case 'b':
-    {
-        std::map<unsigned long, double> r = nb->predict(vec);
-        if (r[1] > r[0]) res = 1;
-        break;
-    }
-    case 'm':
-    {
-        //arma::u64_rowvec r;
-        ////m_nb->Classify(vec, r); //causes bug
-        //res = r[0];
-        //break;
-    }
-    }
-
-    return 0;
-}

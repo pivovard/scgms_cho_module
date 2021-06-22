@@ -52,29 +52,29 @@
   * @author = Bc. David Pivovar
   */
 
-#include "lstm_filter.h"
+#include "rnn_filter.h"
 #include "descriptor.h"
 
-CLstm_filter::CLstm_filter(scgms::IFilter* output) : CBase_Filter(output) {
+CRnn_filter::CRnn_filter(scgms::IFilter* output) : CBase_Filter(output) {
 	//
 }
 
-CLstm_filter::~CLstm_filter() {
+CRnn_filter::~CRnn_filter() {
 	//
 }
 
-HRESULT IfaceCalling CLstm_filter::QueryInterface(const GUID* riid, void** ppvObj) {
+HRESULT IfaceCalling CRnn_filter::QueryInterface(const GUID* riid, void** ppvObj) {
 	if (Internal_Query_Interface<scgms::IFilter>(cho_detection::id_savgol, *riid, ppvObj)) return S_OK;
 
 	return E_NOINTERFACE;
 }
 
-HRESULT IfaceCalling CLstm_filter::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
+HRESULT IfaceCalling CRnn_filter::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
 	rnn::load_model(L"model/575_fdeep_model.json");
 	return S_OK;
 }
 
-HRESULT IfaceCalling CLstm_filter::Do_Execute(scgms::UDevice_Event event) {
+HRESULT IfaceCalling CRnn_filter::Do_Execute(scgms::UDevice_Event event) {
 
 	if (event.is_level_event() && event.signal_id() == scgms::signal_IG) {
 
@@ -89,7 +89,7 @@ HRESULT IfaceCalling CLstm_filter::Do_Execute(scgms::UDevice_Event event) {
 		if(res > 0)
 		{
 			scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
-			event_act.device_id() = cho_detection::id_lstm;
+			event_act.device_id() = cho_detection::id_rnn;
 			event_act.signal_id() = cho_detection::signal_activation;
 			event_act.segment_id() = event.segment_id();
 			event_act.device_time() = event.device_time();
@@ -101,7 +101,7 @@ HRESULT IfaceCalling CLstm_filter::Do_Execute(scgms::UDevice_Event event) {
 			}
 
 			scgms::UDevice_Event event_cho(scgms::NDevice_Event_Code::Level);
-			event_cho.device_id() = cho_detection::id_lstm;
+			event_cho.device_id() = cho_detection::id_rnn;
 			event_cho.segment_id() = event.segment_id();
 			event_cho.device_time() = event.device_time();
 			event_cho.signal_id() = cho_detection::signal_cho;

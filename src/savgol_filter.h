@@ -68,6 +68,7 @@
 #pragma warning( push )
 #pragma warning( disable : 4250 ) // C4250 - 'class1' : inherits 'class2::member' via dominance
 
+/*Savitzky-Golay smoothing filter*/
 class CSavgol_Filter : public scgms::CBase_Filter {
 
 protected:
