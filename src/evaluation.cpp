@@ -62,34 +62,34 @@ CEvaluation::~CEvaluation() {
 }
 
 HRESULT IfaceCalling CEvaluation::QueryInterface(const GUID* riid, void** ppvObj) {
-	if (Internal_Query_Interface<scgms::IFilter>(cho_detection::id_savgol, *riid, ppvObj)) return S_OK;
+	if (Internal_Query_Interface<scgms::IFilter>(detection::id_savgol, *riid, ppvObj)) return S_OK;
 
 	return E_NOINTERFACE;
 }
 
 HRESULT IfaceCalling CEvaluation::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
-	signal_ref = configuration.Read_GUID(cho_detection::rsSignalRef);
-	signal_det = configuration.Read_GUID(cho_detection::rsSignalDet);
+	signal_ref = configuration.Read_GUID(detection::rsSignalRef);
+	signal_det = configuration.Read_GUID(detection::rsSignalDet);
 	
-	max_delay = configuration.Read_Int(cho_detection::rsMaxDelay, 180);
+	max_delay = configuration.Read_Int(detection::rsMaxDelay, 180);
 	if (max_delay < 0) {
 		error_description.push(L"Delay must be non-negative");
 		return E_INVALIDARG;
 	}
 	
-	fp_delay = configuration.Read_Int(cho_detection::rsFPDelay, 180);
+	fp_delay = configuration.Read_Int(detection::rsFPDelay, 180);
 	if (fp_delay < 0) {
 		error_description.push(L"Delay must be non-negative");
 		return E_INVALIDARG;
 	}
 
-	late_delay = configuration.Read_Int(cho_detection::rsLateDelay, 0);
+	late_delay = configuration.Read_Int(detection::rsLateDelay, 0);
 	if (late_delay < 0) {
 		error_description.push(L"Delay must be non-negative");
 		return E_INVALIDARG;
 	}
 
-	min_ref = configuration.Read_Int(cho_detection::rsMinRef, 0);
+	min_ref = configuration.Read_Int(detection::rsMinRef, 0);
 	
 	return S_OK;
 }
@@ -141,13 +141,13 @@ HRESULT IfaceCalling CEvaluation::Do_Execute(scgms::UDevice_Event event) {
 			double delay_conf = data.global.delay_conf / scgms::One_Minute / data.global.TPc;
 
 			scgms::UDevice_Event e(scgms::NDevice_Event_Code::Information);
-			e.device_id() = cho_detection::id_eval;
+			e.device_id() = detection::id_eval;
 			e.signal_id() = Invalid_GUID;
 			e.segment_id() = event.segment_id();
 			e.device_time() = event.device_time();
 
 			std::wstringstream stream;
-			stream << L"CHO count: " << data.global.count << L" Accuracy detection: " << acc_d << L", delay: " << delay << L", TP detected: " << data.global.TPd
+			stream << L"Ref count: " << data.global.count << L" Accuracy detection: " << acc_d << L", delay: " << delay << L", TP detected: " << data.global.TPd
 				<< L", Accuracy confirmed: " << acc_c << L", confirmation delay: " << delay_conf << L", TP confirmed: " << data.global.TPc
 				<< L", FN: " << data.global.FN << L", FP: " << data.global.FPc;
 			e.info.set(stream.str().c_str());

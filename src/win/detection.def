@@ -1,4 +1,4 @@
-LIBRARY cho_detection.dll
+LIBRARY detection.dll
 
 EXPORTS
 	do_get_signal_descriptors

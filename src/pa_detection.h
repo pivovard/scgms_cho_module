@@ -122,10 +122,10 @@ private:
     bool b_edge = false;
     GUID ist_signal;
     size_t ist_window = 12;
-    double th_act = 2;
+    double th_act = -2;
     double th_edge = -5.5;
-    std::vector<double> thresholds = { 0.0125, 0.018 };
-    std::vector<double> weights = { 2.25, 3 };
+    std::vector<double> thresholds = { -0.0125, -0.018 };
+    std::vector<double> weights = { -2.25, -3 };
 
     /*Calc activation function*/
     double activation(scgms::UDevice_Event& event, PASegmentData& data);

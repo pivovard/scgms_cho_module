@@ -62,16 +62,16 @@ CSavgol_Filter::~CSavgol_Filter() {
 }
 
 HRESULT IfaceCalling CSavgol_Filter::QueryInterface(const GUID* riid, void** ppvObj) {
-	if (Internal_Query_Interface<scgms::IFilter>(cho_detection::id_savgol, *riid, ppvObj)) return S_OK;
+	if (Internal_Query_Interface<scgms::IFilter>(detection::id_savgol, *riid, ppvObj)) return S_OK;
 
 	return E_NOINTERFACE;
 }
 
 HRESULT IfaceCalling CSavgol_Filter::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
-	input_signal = configuration.Read_GUID(cho_detection::rsSignal, scgms::signal_IG);
+	input_signal = configuration.Read_GUID(detection::rsSignal, scgms::signal_IG);
 	
-	window = configuration.Read_Int(cho_detection::rsSavgolWindow, 21);
-	degree = configuration.Read_Int(cho_detection::rsSavgolDeg, 3);
+	window = configuration.Read_Int(detection::rsSavgolWindow, 21);
+	degree = configuration.Read_Int(detection::rsSavgolDeg, 3);
 
 	if (window < 1) {
 		error_description.push(L"Size of the window must be at least 1!");
@@ -118,8 +118,8 @@ HRESULT CSavgol_Filter::process(scgms::UDevice_Event &event, swl<double>& ist)
 
 	//send smoothed signal
 	scgms::UDevice_Event e(scgms::NDevice_Event_Code::Level);
-	e.device_id() = cho_detection::id_savgol;
-	e.signal_id() = cho_detection::signal_savgol;
+	e.device_id() = detection::id_savgol;
+	e.signal_id() = detection::signal_savgol;
 	e.segment_id() = event.segment_id();
 	e.device_time() = event.device_time();
 	e.level() = _ist;

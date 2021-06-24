@@ -2,10 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
 PROJECT("SmartCGMS")
 
-SET(PROJ "act_detection")
+SET(PROJ "detection")
 SET(CMAKE_CXX_STANDARD 17)
 #set common dir
-SET(SMARTCGMS_COMMON_DIR "c:/Users/pivov/_dev/_dp/smartcgms/src/common/")
+SET(SMARTCGMS_COMMON_DIR "../../common/")
 
 FILE(GLOB SRC_FILES "src/*.cpp" "src/*.hpp" "src/*.c" "src/*.h")
 FILE(GLOB SRC_ML_FILES "src/ML/*.cpp" "src/ML/*.hpp" "src/ML/*.h" "src/ML/*.def")
@@ -43,7 +43,7 @@ ADD_LIBRARY(${PROJ} SHARED ${SRC_FILES};${COMMON_FILES};${SRC_ML_FILES};${SRC_SK
 
 #set include directories
 include_directories("c:/Program Files (x86)/Visual Leak Detector/include/")
-include_directories("c:/Users/pivov/_dev/_dp/lib/frugally-deep/include/")
-include_directories("c:/Users/pivov/_dev/_dp/lib/eigen/")
-include_directories("c:/Users/pivov/_dev/_dp/lib/FunctionalPlus/include/")
-include_directories("c:/Users/pivov/_dev/_dp/lib/json/include/")
+include_directories("../lib/frugally-deep/include/")
+include_directories("../lib/eigen/")
+include_directories("../lib/FunctionalPlus/include/")
+include_directories("../lib/json/include/")

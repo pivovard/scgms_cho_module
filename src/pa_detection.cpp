@@ -61,35 +61,38 @@ CPa_Detection::~CPa_Detection() {
 }
 
 HRESULT IfaceCalling CPa_Detection::QueryInterface(const GUID* riid, void** ppvObj) {
-	if (Internal_Query_Interface<scgms::IFilter>(cho_detection::id_cho, *riid, ppvObj)) return S_OK;
+	if (Internal_Query_Interface<scgms::IFilter>(detection::id_cho, *riid, ppvObj)) return S_OK;
 
 	return E_NOINTERFACE;
 }
 
 HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
-	if (configuration.Read_Bool(cho_detection::rsSHeartbeat)) {
-		signals.push_back(scgms::signal_Heartbeat);
-		auto th =  configuration.Read_Double(cho_detection::rsThHeartbeat, 80);
-		th_signal.emplace(scgms::signal_Heartbeat, th);
-	}
-	if (configuration.Read_Bool(cho_detection::rsSSteps)) {
-		signals.push_back(scgms::signal_Steps);
-		auto th = configuration.Read_Double(cho_detection::rsThSteps, 20);
-		th_signal.emplace(scgms::signal_Steps, th);
-	}
-	if (configuration.Read_Bool(cho_detection::rsSAcc)) {
-		signals.push_back(scgms::signal_Acceleration);
-		auto th = configuration.Read_Double(cho_detection::rsThAcc, 1.1);
-		th_signal.emplace(scgms::signal_Acceleration, th);
-	}
-	if (configuration.Read_Bool(cho_detection::rsSEl)) {
-		signals.push_back(scgms::signal_Electrodermal_Activity);
-		auto th = configuration.Read_Double(cho_detection::rsThEl, 10);
-		th_signal.emplace(scgms::signal_Electrodermal_Activity, th);
+	//thresholds
+	std::vector<double> lb, def, ub;
+	if (!configuration.Read_Parameters(detection::rsThresholds, lb, def, ub)) {
+		error_description.push(L"Cannot read the parameters!");
+		return E_INVALIDARG;
 	}
 
-	if (b_mean = configuration.Read_Bool(cho_detection::rsMean) || b_class) {
-		mean_window = configuration.Read_Int(cho_detection::rsMeanSize);
+	if (configuration.Read_Bool(detection::rsSHeartbeat)) {
+		signals.push_back(scgms::signal_Heartbeat);
+		th_signal.emplace(scgms::signal_Heartbeat, def[0]);
+	}
+	if (configuration.Read_Bool(detection::rsSSteps)) {
+		signals.push_back(scgms::signal_Steps);
+		th_signal.emplace(scgms::signal_Steps, def[1]);
+	}
+	if (configuration.Read_Bool(detection::rsSAcc)) {
+		signals.push_back(scgms::signal_Acceleration);
+		th_signal.emplace(scgms::signal_Acceleration, def[2]);
+	}
+	if (configuration.Read_Bool(detection::rsSEl)) {
+		signals.push_back(scgms::signal_Electrodermal_Activity);
+		th_signal.emplace(scgms::signal_Electrodermal_Activity, def[3]);
+	}
+
+	if (b_mean = configuration.Read_Bool(detection::rsMean) || b_class) {
+		mean_window = configuration.Read_Int(detection::rsMeanSize);
 		if (mean_window < 1) {
 			error_description.push(L"Window size must be at least 1!");
 			return E_INVALIDARG;
@@ -99,23 +102,17 @@ HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration co
 		mean_window = 1;
 	}
 
-	if (configuration.Read_Bool(cho_detection::rsDesc)) {
-		ist_signal = configuration.Read_GUID(cho_detection::rsSignal, cho_detection::signal_savgol);
-		ist_window = configuration.Read_Int(cho_detection::rsWindowSize);
+	if (configuration.Read_Bool(detection::rsDesc)) {
+		ist_signal = configuration.Read_GUID(detection::rsSignal, detection::signal_savgol);
+		ist_window = configuration.Read_Int(detection::rsWindowSize);
 		if (ist_window < 1) {
 			error_description.push(L"Window size must be at least 1!");
 			return E_INVALIDARG;
 		}
 
-		std::vector<double> lb, def, ub;
-		if (!configuration.Read_Parameters(cho_detection::rsThresholds, lb, def, ub)) {
-			error_description.push(L"Cannot read the parameters!");
-			return E_INVALIDARG;
-		}
-
 		for (size_t i = 0; i < 2; i++) {
-			thresholds[i] = def[i * 2];
-			weights[i] = def[i * 2 + 1];
+			thresholds[i] = def[4 + i * 2];
+			weights[i] = def[4 + i * 2 + 1];
 		}
 	}
 
@@ -152,20 +149,20 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 
 	//detected pa event
 	scgms::UDevice_Event event_pa(scgms::NDevice_Event_Code::Level);
-	event_pa.device_id() = cho_detection::id_pa;
+	event_pa.device_id() = detection::id_pa;
 	event_pa.segment_id() = event.segment_id();
 	event_pa.device_time() = event.device_time();
-	event_pa.signal_id() = cho_detection::signal_pa;
+	event_pa.signal_id() = detection::signal_pa;
 	event_pa.level() = 0;
 
 	//ist signal
-	if (b_edge && event.is_level_event() && event.signal_id() == cho_detection::signal_savgol && event.level() > 0) {
+	if (b_edge && event.is_level_event() && event.signal_id() == detection::signal_savgol && event.level() > 0) {
 		double act = activation(event, *data);
 
 		//activation event
 		scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
-		event_act.device_id() = cho_detection::id_cho;
-		event_act.signal_id() = cho_detection::signal_activation;
+		event_act.device_id() = detection::id_cho;
+		event_act.signal_id() = detection::signal_activation;
 		event_act.segment_id() = event.segment_id();
 		event_act.device_time() = event.device_time();
 		event_act.level() = act+20;
@@ -177,14 +174,6 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 	
 	if (event.is_level_event() && std::find(signals.begin(), signals.end(), event.signal_id()) != signals.end() && event.level() > 0) {
 		if (data->last_event_time == -1) data->last_event_time = event.device_time(); //first value set time
-
-		//if there is a space > 5 min between measures add 0
-		/*double delta = (event.device_time() - data->last_event_time) / scgms::One_Minute;
-		if (delta > 5) {
-			for (int i = 0; i < (int)(delta / 5); ++i) {
-				data->values[event.signal_id()].push_back(0);
-			}
-		}*/
 
 		//save values
 		auto& values = data->values[event.signal_id()];
@@ -246,12 +235,12 @@ double CPa_Detection::activation(scgms::UDevice_Event& event, PASegmentData& dat
 	//get weight of the signal
 	double act_m = 0;
 	for (size_t i = 0; i < thresholds.size(); ++i) {
-		if (der < -1 * thresholds[i]) act_m = -1 * weights[i];
+		if (der < thresholds[i]) act_m = weights[i];
 	}
 
-	if (act_m <= -1 * weights[0]) {
+	if (act_m <= weights[0]) {
 		for (size_t i = 0; i < data.activation_m.size(); ++i) {
-			if (data.activation_m.at(i) <= -1 * (th_act + i * 0.2)) {
+			if (data.activation_m.at(i) <= th_act - i * 0.2) {
 				act_m -= 0.1 * i;
 			}
 		}

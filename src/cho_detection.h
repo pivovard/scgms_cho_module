@@ -87,7 +87,7 @@ public:
 private:
 	std::map<uint64_t, CHOSegmentData> mSegments;
 
-	GUID input_signal = cho_detection::signal_savgol;
+	GUID input_signal = detection::signal_savgol;
 	bool detect_edges = true;
 	bool detect_desc = false;
 

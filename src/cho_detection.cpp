@@ -61,7 +61,7 @@ CCho_Detection::~CCho_Detection() {
 }
 
 HRESULT IfaceCalling CCho_Detection::QueryInterface(const GUID*  riid, void ** ppvObj) {
-	if (Internal_Query_Interface<scgms::IFilter>(cho_detection::id_cho, *riid, ppvObj)) return S_OK;
+	if (Internal_Query_Interface<scgms::IFilter>(detection::id_cho, *riid, ppvObj)) return S_OK;
 
 	return E_NOINTERFACE;
 }
@@ -77,68 +77,44 @@ std::vector<double> split(const std::wstring& ws, wchar_t delim) {
 }
 
 HRESULT IfaceCalling CCho_Detection::Do_Configure(scgms::SFilter_Configuration configuration, refcnt::Swstr_list& error_description) {
-	input_signal = configuration.Read_GUID(cho_detection::rsSignal, cho_detection::signal_savgol);
-	window_size = configuration.Read_Int(cho_detection::rsWindowSize, 12);
+	input_signal = configuration.Read_GUID(detection::rsSignal, detection::signal_savgol);
+	window_size = configuration.Read_Int(detection::rsWindowSize, 12);
 	if(window_size < 1){
 		error_description.push(L"Window size must be at least 1!");
 		return E_INVALIDARG;
 	}
 
-	/*auto th = configuration.Read_String(cho_detection::rsThresholds, true, L"0.0125,0.018");
-	if(!th.empty()){
-		thresholds = split(th, L',');
-	}
-	else{
-		error_description.push(L"Thresholds must not be empty!");
+	std::vector<double> lb, def, ub;
+	if (!configuration.Read_Parameters(detection::rsThresholds, lb, def, ub)) {
+		error_description.push(L"Cannot read the parameters!");
 		return E_INVALIDARG;
 	}
-	auto w = configuration.Read_String(cho_detection::rsWeights);
-	if (!w.empty()){
-		weights = split(w, L',');
-	}
-	else{
-		error_description.push(L"Weights must not be empty!");
-		return E_INVALIDARG;
-	}
-	if(thresholds.size() != weights.size()){
-		error_description.push(L"Thresholds and weights must have same number of elements!");
-		return E_INVALIDARG;
-	}*/
 
-	{
-		std::vector<double> lb, def, ub;
-		if (!configuration.Read_Parameters(cho_detection::rsThresholds, lb, def, ub)) {
-			error_description.push(L"Cannot read the parameters!");
-			return E_INVALIDARG;
-		}
-
-		for (size_t i = 0; i < 2; i++) {
-			thresholds[i] = def[i * 2];
-			weights[i] = def[i * 2 + 1];
-		}
+	for (size_t i = 0; i < 2; i++) {
+		thresholds[i] = def[i * 2];
+		weights[i] = def[i * 2 + 1];
 	}
 	
-	th_act = configuration.Read_Double(cho_detection::rsThAct, 2);
+	th_act = configuration.Read_Double(detection::rsThAct, 2);
 	if (th_act < 0) {
 		error_description.push(L"Activation threshold must be non-negative");
 		return E_INVALIDARG;
 	}
 	
-	detect_edges = configuration.Read_Bool(cho_detection::rsEdges);
-	detect_desc = configuration.Read_Bool(cho_detection::rsDesc);
-	use_rnn = configuration.Read_Bool(cho_detection::rsRnn);
+	detect_edges = configuration.Read_Bool(detection::rsEdges);
+	detect_desc = configuration.Read_Bool(detection::rsDesc);
+	use_rnn = configuration.Read_Bool(detection::rsRnn);
 	
 	if(use_rnn)
 	{
-		// rnn::load_model(L"fdeep_model.json");
-		auto path = configuration.Read_File_Path(cho_detection::rsModelPath);
+		auto path = configuration.Read_File_Path(detection::rsModelPath);
 		if(!std::filesystem::exists(path)){
 			error_description.push(L"RNN model file doesn't exists!");
 			return E_INVALIDARG;
 		}
 		rnn::load_model(path);
 
-		th_rnn = configuration.Read_Double(cho_detection::rsRnnThreshold);
+		th_rnn = configuration.Read_Double(detection::rsRnnThreshold);
 		if (th_rnn < 0) {
 			error_description.push(L"RNN threshold must be non-negative");
 			return E_INVALIDARG;
@@ -161,17 +137,17 @@ HRESULT IfaceCalling CCho_Detection::Do_Execute(scgms::UDevice_Event event) {
 
 		//activation event
 		scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
-		event_act.device_id() = cho_detection::id_cho;
-		event_act.signal_id() = cho_detection::signal_activation;
+		event_act.device_id() = detection::id_cho;
+		event_act.signal_id() = detection::signal_activation;
 		event_act.segment_id() = event.segment_id();
 		event_act.device_time() = event.device_time();
 
 		//event of detected cho
 		scgms::UDevice_Event event_cho(scgms::NDevice_Event_Code::Level);
-		event_cho.device_id() = cho_detection::id_cho;
+		event_cho.device_id() = detection::id_cho;
 		event_cho.segment_id() = event.segment_id();
 		event_cho.device_time() = event.device_time();
-		event_cho.signal_id() = cho_detection::signal_cho;
+		event_cho.signal_id() = detection::signal_cho;
 		event_cho.level() = 0;
 
 		double act = 0;

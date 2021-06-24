@@ -54,7 +54,7 @@
 
 #include <rtl/guid.h>
 
-namespace cho_detection {
+namespace detection {
 	
 	constexpr GUID id_cho = { 0xe4e55b55, 0x4ef, 0x4ed8, { 0x8c, 0x17, 0xf8, 0x78, 0x6e, 0x9b, 0x39, 0x3e } }; // {E4E55B55-04EF-4ED8-8C17-F8786E9B393E}
 	constexpr GUID signal_activation = { 0x7cae17b7, 0x4887, 0x4874, { 0x95, 0xe3, 0x76, 0x6e, 0xfa, 0x7, 0x37, 0x7b } }; // {7CAE17B7-4887-4874-95E3-766EFA07377B}
@@ -63,18 +63,12 @@ namespace cho_detection {
 	extern const wchar_t* rsSignal;
 	extern const wchar_t* rsWindowSize;
 	extern const wchar_t* rsThresholds;
-	extern const wchar_t* rsWeights;
 	extern const wchar_t* rsThAct;
 	extern const wchar_t* rsEdges;
 	extern const wchar_t* rsDesc;
 	extern const wchar_t* rsRnn;
 	extern const wchar_t* rsModelPath;
 	extern const wchar_t* rsRnnThreshold;
-
-	
-	//Deprecated
-	constexpr GUID id_rnn = { 0xb05c2db1, 0xb6a7, 0x45a6, { 0xb9, 0x73, 0xa6, 0x65, 0x7f, 0x83, 0xd7, 0x25 } }; // {B05C2DB1-B6A7-45A6-B973-A6657F83D725}
-	constexpr GUID signal_rnn = { 0xb778a642, 0xc4c9, 0x473e, { 0x9c, 0x8c, 0xf1, 0x60, 0x30, 0x4f, 0x7, 0xc0 } }; // {B778A642-C4C9-473E-9C8C-F160304F07C0}
 
 	
 	constexpr GUID id_savgol = { 0xf45103c3, 0xe0e1, 0x4a8d, { 0xae, 0xc4, 0xb9, 0x7c, 0x83, 0x83, 0xf, 0x9f } }; // {F45103C3-E0E1-4A8D-AEC4-B97C83830F9F}
@@ -102,10 +96,6 @@ namespace cho_detection {
 	extern const wchar_t* rsSSteps;
 	extern const wchar_t* rsSAcc;
 	extern const wchar_t* rsSEl;
-	extern const wchar_t* rsThHeartbeat;
-	extern const wchar_t* rsThSteps;
-	extern const wchar_t* rsThAcc;
-	extern const wchar_t* rsThEl;
 
 	extern const wchar_t* rsMean;
 	extern const wchar_t* rsMeanSize;
