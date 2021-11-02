@@ -120,7 +120,7 @@ private:
 
     //edge detection
     bool b_edge = false;
-    GUID ist_signal;
+    GUID ist_signal = Invalid_GUID;
     size_t ist_window = 12;
     double th_act = -2;
     double th_edge = -5.5;

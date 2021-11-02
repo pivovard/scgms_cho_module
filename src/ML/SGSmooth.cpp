@@ -69,13 +69,13 @@ float_mat::float_mat(const size_t rows, const size_t cols, const double defval)
     for (i = 0; i < rows; ++i) {
         (*this)[i].resize(cols, defval);
     }
-    if ((rows < 1) || (cols < 1)) {
+    /*if ((rows < 1) || (cols < 1)) {
         char buffer[1024];
 
         sprintf(buffer, "cannot build matrix with %d rows and %d columns\n",
             rows, cols);
         //sgs_error(buffer);
-    }
+    }*/
 }
 
 // copy constructor for matrix
@@ -149,11 +149,11 @@ static int partial_pivot(float_mat& A, const size_t row, const size_t col,
     int swapNum = 1;
 
     // default pivot is the current position, [row,col]
-    int pivot = row;
+    size_t pivot = row;
     double piv_elem = fabs(A[idx[row]][col]) * scale[idx[row]];
 
     // loop over possible pivots below current
-    int j;
+    size_t j;
     for (j = row + 1; j < A.nr_rows(); ++j) {
 
         const double tmp = fabs(A[idx[j]][col]) * scale[idx[j]];
@@ -173,7 +173,7 @@ static int partial_pivot(float_mat& A, const size_t row, const size_t col,
         if (pivot > row) {           // bring the pivot to the diagonal
             j = idx[row];           // reorder swap array
             idx[row] = idx[pivot];
-            idx[pivot] = j;
+            idx[pivot] = (int)j;
             swapNum = -swapNum;     // keeping track of odd or even swap
         }
         return swapNum;
@@ -190,8 +190,8 @@ static int partial_pivot(float_mat& A, const size_t row, const size_t col,
     {
         int r, c, k;
 
-        for (r = (A.nr_rows() - 1); r >= 0; --r) {
-            for (c = (A.nr_cols() - 1); c > r; --c) {
+        for (r = (int)(A.nr_rows() - 1); r >= 0; --r) {
+            for (c = (int)(A.nr_cols() - 1); c > r; --c) {
                 for (k = 0; k < A.nr_cols(); ++k) {
                     a[r][k] -= A[r][c] * a[c][k];
                 }
@@ -307,7 +307,7 @@ static int partial_pivot(float_mat& A, const size_t row, const size_t col,
     //! Returns the inverse of a matrix using LU-decomposition.
     static float_mat invert(const float_mat & A)
     {
-        const int n = A.size();
+        const size_t n = A.size();
         float_mat E(n, n, 0.0);
         float_mat B(A);
         int i;
@@ -392,7 +392,7 @@ static int partial_pivot(float_mat& A, const size_t row, const size_t col,
      * vector of size 2w+1, e.g. for w=2 b=(0,0,1,0,0). evaluating the polynome
      * yields the sg-coefficients.  at the border non symmectric vectors b are
      * used. */
-    float_vect sg_smooth(const float_vect & v, const int width, const int deg)
+    float_vect sg_smooth(const float_vect & v, const size_t width, const size_t deg)
     {
         float_vect res(v.size(), 0.0);
         if ((width < 1) || (deg < 0) || (v.size() < (2 * width + 2))) {
@@ -400,11 +400,11 @@ static int partial_pivot(float_mat& A, const size_t row, const size_t col,
             return res;
         }
 
-        const int window = 2 * width + 1;
-        const int endidx = v.size() - 1;
+        const size_t window = 2 * width + 1;
+        const size_t endidx = v.size() - 1;
 
         // do a regular sliding window average
-        int i, j;
+        size_t i, j;
         if (deg == 0) {
             // handle border cases first because we need different coefficients
 #if defined(_OPENMP)
@@ -468,7 +468,7 @@ static int partial_pivot(float_mat& A, const size_t row, const size_t col,
      *  then calculate the first derivative and return it. */
     static float_vect lsqr_fprime(const float_vect & b, const int deg)
     {
-        const int rows(b.size());
+        const size_t rows(b.size());
         const int cols(deg + 1);
         float_mat A(rows, cols);
         float_vect res(rows);

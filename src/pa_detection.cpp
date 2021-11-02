@@ -125,9 +125,8 @@ HRESULT IfaceCalling CPa_Detection::Do_Configure(scgms::SFilter_Configuration co
 }
 
 HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
-	//get segment data
-	PASegmentData* data;
 	if (event.is_level_event()) {
+		//get segment data
 		auto seg_id = event.segment_id();
 		auto it = mSegments.find(seg_id);
 		if (it == mSegments.end()) {
@@ -141,78 +140,78 @@ HRESULT IfaceCalling CPa_Detection::Do_Execute(scgms::UDevice_Event event) {
 			swl<double> act(ist_window);
 			act.push_front(0);
 
-			PASegmentData data = { -1, false, -1, -1, act, values, features };
-			it = mSegments.emplace(seg_id, data).first;
+			PASegmentData tmp = { -1, false, -1, -1, act, values, features };
+			it = mSegments.emplace(seg_id, tmp).first;
 		}
-		data = &it->second;
-	}
+		PASegmentData* data = &it->second;
 
-	//detected pa event
-	scgms::UDevice_Event event_pa(scgms::NDevice_Event_Code::Level);
-	event_pa.device_id() = detection::id_pa;
-	event_pa.segment_id() = event.segment_id();
-	event_pa.device_time() = event.device_time();
-	event_pa.signal_id() = detection::signal_pa;
-	event_pa.level() = 0;
+		//detected pa event
+		scgms::UDevice_Event event_pa(scgms::NDevice_Event_Code::Level);
+		event_pa.device_id() = detection::id_pa;
+		event_pa.segment_id() = event.segment_id();
+		event_pa.device_time() = event.device_time();
+		event_pa.signal_id() = detection::signal_pa;
+		event_pa.level() = 0;
 
-	//ist signal
-	if (b_edge && event.is_level_event() && event.signal_id() == detection::signal_savgol && event.level() > 0) {
-		double act = activation(event, *data);
+		//ist signal
+		if (b_edge && event.signal_id() == detection::signal_savgol && event.level() > 0) {
+			double act = activation(event, *data);
 
-		//activation event
-		scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
-		event_act.device_id() = detection::id_cho;
-		event_act.signal_id() = detection::signal_activation;
-		event_act.segment_id() = event.segment_id();
-		event_act.device_time() = event.device_time();
-		event_act.level() = act+20;
-		auto rc = mOutput.Send(event_act);
-		if (!Succeeded(rc)) {
-			return rc;
-		}
-	}
-	
-	if (event.is_level_event() && std::find(signals.begin(), signals.end(), event.signal_id()) != signals.end() && event.level() > 0) {
-		if (data->last_event_time == -1) data->last_event_time = event.device_time(); //first value set time
-
-		//save values
-		auto& values = data->values[event.signal_id()];
-		values.push_back(event.level());
-		data->features[event.signal_id()] = calc_features(values.to_vector());
-
-		data->last_event_time = event.device_time();
-
-		//threshold
-		bool res = true;
-		for each (auto signal in data->features)
-		{
-			//if window_size = 1 then mean = value
-			res = res && (signal.second.mean > th_signal[signal.first]);
-		}
-		if (res) {
-			event_pa.level() = 1;
-		}
-
-		//confirmation
-		if (b_edge) {
-			if (data->activation_m.front() < th_edge) {
-				event_pa.level() += 1;
+			//activation event
+			scgms::UDevice_Event event_act(scgms::NDevice_Event_Code::Level);
+			event_act.device_id() = detection::id_cho;
+			event_act.signal_id() = detection::signal_activation;
+			event_act.segment_id() = event.segment_id();
+			event_act.device_time() = event.device_time();
+			event_act.level() = act + 20;
+			auto rc = mOutput.Send(event_act);
+			if (!Succeeded(rc)) {
+				return rc;
 			}
 		}
-		else {
-			event_pa.level() *= 2;
-		}
 
-		//classification - test purposes only
-		if (b_class) {
-			auto res = classifier->classify(get_feature_vector(data->features));
-			event_pa.level() = res * 2;
-		}
+		if (std::find(signals.begin(), signals.end(), event.signal_id()) != signals.end() && event.level() > 0) {
+			if (data->last_event_time == -1) data->last_event_time = event.device_time(); //first value set time
 
-		//send detected pa
-		auto rc = mOutput.Send(event_pa);
-		if (!Succeeded(rc)) {
-			return rc;
+			//save values
+			auto& values = data->values[event.signal_id()];
+			values.push_back(event.level());
+			data->features[event.signal_id()] = calc_features(values.to_vector());
+
+			data->last_event_time = event.device_time();
+
+			//threshold
+			bool res = true;
+			for each (const auto& signal in data->features)
+			{
+				//if window_size = 1 then mean = value
+				res = res && (signal.second.mean > th_signal[signal.first]);
+			}
+			if (res) {
+				event_pa.level() = 1;
+			}
+
+			//confirmation
+			if (b_edge) {
+				if (data->activation_m.front() < th_edge) {
+					event_pa.level() += 1;
+				}
+			}
+			else {
+				event_pa.level() *= 2;
+			}
+
+			//classification - test purposes only
+			if (b_class) {
+				auto res = classifier->classify(get_feature_vector(data->features));
+				event_pa.level() = res * 2;
+			}
+
+			//send detected pa
+			auto rc = mOutput.Send(event_pa);
+			if (!Succeeded(rc)) {
+				return rc;
+			}
 		}
 	}
 	
@@ -270,7 +269,7 @@ std::vector<double> CPa_Detection::get_feature_vector(std::map<GUID, SFeatures> 
 {
 	std::vector<double> vec;
 
-	for each (auto var in features)
+	for each (const auto& var in features)
 	{
 		auto f = var.second;
 		vec.push_back(f.mean);

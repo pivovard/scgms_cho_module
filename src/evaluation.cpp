@@ -89,7 +89,7 @@ HRESULT IfaceCalling CEvaluation::Do_Configure(scgms::SFilter_Configuration conf
 		return E_INVALIDARG;
 	}
 
-	min_ref = configuration.Read_Int(detection::rsMinRef, 0);
+	min_ref = (size_t)configuration.Read_Int(detection::rsMinRef, 0);
 	
 	return S_OK;
 }
@@ -113,7 +113,7 @@ HRESULT IfaceCalling CEvaluation::Do_Execute(scgms::UDevice_Event event) {
 
 		//check date (if new day and ref count > 2 save stat)
 		double d;
-		std::modf(event.device_time(), &d);
+		auto t = std::modf(event.device_time(), &d);
 		if(d > data.date)
 		{
 			data.date = d;

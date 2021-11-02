@@ -114,7 +114,9 @@ HRESULT CSavgol_Filter::process(scgms::UDevice_Event &event, swl<double>& ist)
 	ist.push_back(event.level());
 
 	auto vec = std::vector<double>(ist.begin(), ist.end());
-	_ist = (sg_smooth(vec, window, degree).back());
+	//_ist = (sg_smooth(vec, window, degree).back());
+	auto vec2 = sg_smooth(vec, window, degree);
+	//_ist = vec2[(int)(window / 2)]; //-2 => value before last one
 
 	//send smoothed signal
 	scgms::UDevice_Event e(scgms::NDevice_Event_Code::Level);

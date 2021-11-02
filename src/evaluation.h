@@ -107,13 +107,13 @@ public:
 	virtual HRESULT IfaceCalling QueryInterface(const GUID* riid, void** ppvObj) override final;
 
 private:
-	GUID signal_ref;
-	GUID signal_det;
+	GUID signal_ref = Invalid_GUID;
+	GUID signal_det = Invalid_GUID;
 	size_t th_drop = 36;
 	int64_t max_delay = 180;
 	int64_t fp_delay = 120;
 	int64_t late_delay = 10;
-	int64_t min_ref = 0;
+	size_t min_ref = 0;
 	size_t th_detection = 1;
 	size_t th_confirmation = 2;
 

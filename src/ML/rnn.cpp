@@ -36,12 +36,13 @@ float rnn::predict(scgms::UDevice_Event& event)
 		data.push_back(0.0f);
 	}
 
+	float device_time = (float)event.device_time();
 	float date;
-	float time = std::modf(event.device_time(), &date);
-	float minute = time / scgms::One_Minute;
+	float time = std::modf(device_time, &date);
+	float minute = time / (float)scgms::One_Minute;
 	minute = minute / 1440; //normalized
 	float hour;
-	std::modf(time / scgms::One_Hour, &hour);
+	std::modf(time / (float)scgms::One_Hour, &hour);
 	hour = hour / 24; //normalized
 	data.push_back(minute);
 
